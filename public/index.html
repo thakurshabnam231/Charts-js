@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Multiple Charts</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-gauge"></script>
+    <style>
+      #charts-container {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      .chart-container {
+        margin: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <script src="app.js"></script>
+    <div id="charts-container"></div>
+
+    <script>
+
+const gradientSegment = createGradientSegment();
+  
+      const gaugeChartText = {
+        id: "gaugeChartText",
+        afterDatasetsDraw(chart, args, pluginOptions) {
+          const {
+            ctx,
+            data,
+            chartArea: { top, bottom, left, right, width, height },
+            scales: { r },
+          } = chart;
+          ctx.save();
+          const xCoor = chart.getDatasetMeta(0).data[0].x;
+          const yCoor = chart.getDatasetMeta(0).data[0].y;
+          const score = data.datasets[0].data[0];
+          const label = data.datasets[0].label;
+
+          let rating;
+
+          if (score >= 0 && score <= 30) {
+            rating == "very low";
+          }
+          if (score >= 31 && score <= 60) {
+            rating == "low";
+          }
+          if (score >= 61 && score <= 90) {
+            rating == "normal";
+          }
+          if (score >= 91 && score <= 120) {
+            rating == "high";
+          }
+
+          if (score >= 121 && score <= 150) {
+            rating == "high";
+          }
+
+          //   ctx.fillRect(xCoor, yCoor, 400, 1);
+          function textLabel(
+            text,
+            x,
+            y,
+            fontSize,
+            textBaseLine,
+            fontWeight,
+            textAlign
+          ) {
+            ctx.font = `${fontSize}px sans-serif`;
+            ctx.fillStyle = textBaseLine;
+            ctx.textAlign = textAlign;
+            ctx.fontWeight = fontWeight;
+            ctx.fillText(text, x, y);
+          }
+
+          
+
+          textLabel(`${data.labels[0]}`,left,yCoor+20,20,'top',500,'left');
+           textLabel(`${data.labels[1]}`,right,yCoor+20,20,'top',500,'right');
+          textLabel(label, xCoor, yCoor + 20, 15, "bottom", 500, "center");
+          textLabel(score, xCoor, yCoor - 30, 30, "bottom", 500, "center");
+
+        },
+      };
+
+      function createGradientSegment() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 200;
+        canvas.height = 200;
+        const ctx = canvas.getContext('2d');
+        const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
+        gradient.addColorStop(0, 'green');
+        gradient.addColorStop(0.7, 'yellow');
+        gradient.addColorStop(1, 'red');
+        return gradient;
+      }
+      // Function to create a chart for newData
+      function createChart_(containerId, data) {
+        let min_range = data.range[0];
+        let max_range = data.range[data.range.length - 1];
+
+        const canvas = document.createElement("canvas");
+        canvas.width = 200;
+        canvas.height = 200;
+
+        const chartDiv = document.createElement("div");
+        chartDiv.classList.add("chart-container");
+        chartDiv.appendChild(canvas);
+        document.getElementById("charts-container").appendChild(chartDiv);
+
+        const ctx = canvas.getContext("2d");
+
+        let chart=new Chart(ctx, {
+          type: "doughnut",
+          data: {
+            labels: [min_range.min, max_range.max],
+            datasets: [
+              {
+                label: data.title,
+                data: [data.value, max_range.max - data.value],
+                backgroundColor: [gradientSegment, "grey"],
+                borderWidth: 1,
+                cutout: "70%",
+                circumference: 180,
+                rotation: 270,
+              },
+            ],
+          },
+          options: {
+            aspectRatio: 2.75,
+            responsive: true,
+            maintainAspectRatio: false,
+            tooltips: {
+              enabled: false,
+            },
+            legend: {
+              display: false,
+            },
+            animation: {
+              animateRotate: true,
+              animateScale: false,
+            },
+            title: {
+              display: true,
+              text: data.label,
+              fontSize: 16,
+            },
+          },
+          plugins: [gaugeChartText],
+        });
+
+        return chart;
+      }
+      // Sample data array
+      // const newData=[
+      //   {label:'CREATININE',value:30,startRange: 10, endRange: 120},
+      //   {label:'PHOSPHOROUS',value:40,startRange: 1, endRange: 110},
+      //   {label:'A:G ratio',value:12,startRange: 2, endRange: 100},
+      //   {label:'UREA',value:76,startRange: 3, endRange: 90},
+      //   {label:'URIC ACID',value:100,startRange: 4, endRange: 80},
+      //   {label:'CALCIUM TOTAL',value:93,startRange: 5, endRange: 70},
+      //   {label:'SODIUM',value:10,startRange: 6, endRange: 60},
+
+      // ];
+
+      const newData = [
+        {
+          title: "LDL",
+          type: "gauge",
+          value: 70,
+          range: [
+            { min: 0, max: 30, title: "very low" },
+            { min: 31, max: 60, title: "low" },
+            { min: 61, max: 90, title: "normal" },
+            { min: 91, max: 120, title: "high" },
+            { min: 121, max: 150, title: "very high" },
+          ],
+        },
+        {
+          title: "HDL",
+          type: "gauge",
+          value: 100,
+          range: [
+            { min: 31, max: 60, title: "low" },
+            { min: 61, max: 90, title: "normal" },
+            { min: 91, max: 120, title: "high" },
+          ],
+        },
+      ];
+
+      // Create charts for each dataset in newData
+      const chartsContainer = document.getElementById("charts-container");
+      newData.forEach((data, index) => {
+        const chartId = `chart-${index}`;
+        let chart=createChart_(chartId, data);
+        console.log("chart",chart);
+      });
+    </script>
+  </body>
+</html>
+
