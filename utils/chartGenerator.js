@@ -8,9 +8,12 @@ async function generateChart(chartDataArray) {
   const spacing = 20;
   // Maximum number of rows
 
-  const totalWidth = chartCount * (widthPerChart + spacing) - spacing;
-  const canvasWidth = totalWidth > 500 ? totalWidth : 500;
-  const canvasHeight = Math.round(canvasWidth / aspectRatio);
+//   const totalWidth = chartCount * (widthPerChart + spacing) - spacing;
+//   const canvasWidth = totalWidth > 500 ? totalWidth : 500;
+//   const canvasHeight = Math.round(canvasWidth / aspectRatio);
+
+const canvasWidth=600;
+const canvasHeight=900;
 
   const canvas = createCanvas(canvasWidth, canvasHeight);
   const ctx = canvas.getContext("2d");
@@ -43,7 +46,7 @@ async function drawCanvas(ctx, chartDataArray, canvas) {
     let min_range = range[0];
     let max_range = range[range.length - 1];
 
-const ranges=[min_range.min, max_range.max]
+    const ranges=[min_range.min, max_range.max]
     const gaugeChartText = {
         id: "gaugeChartText",
         afterDatasetsDraw(chart, args, pluginOptions) {
@@ -157,10 +160,11 @@ const ranges=[min_range.min, max_range.max]
     const image = await canvasRenderService.renderToBuffer(configuration);
     chartImages.push(image);
   }
-console.log("chartimahes",chartImages.length)
+
   // Draw the chart images on the main canvas
   const chartsPerRow = 3; // Number of charts in each row
   const maxRows = 4;
+  
 
   for (let i = 0; i < Math.min(maxRows, Math.ceil(chartImages.length / chartsPerRow)); i++) {
     for (let j = 0; j < chartsPerRow; j++) {
