@@ -17,11 +17,11 @@ router.post('/generateChart', async (req, res) => {
         // Generate chart using the function from the separate file
         const chartImages = await generateChart(chartDataArray);
         console.log("chart images",chartImages);
-        const imageBase64 = chartImages.map(imageBuffer => imageBuffer.toString('base64'));
+     const imageBase64 = chartImages.toString('base64');
 
         // Save image to a file (optional)
-      //  const filename = `chart-${label}.png`;
-      //  fs.writeFileSync(filename, imageBuffer);
+       const filename = 'chart.png'
+        fs.writeFileSync(filename, imageBase64);
 
         // Send the base64 URL in the response JSON
         res.status(200).json({
