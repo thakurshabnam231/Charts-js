@@ -7,12 +7,11 @@ async function generateChart(chartDataArray) {
   const spacing = 20;
 
   if (chartDataArray.length > 6) {
-    throw new Error('You can generate a maximum of 6 charts');
+    throw new Error("You can generate a maximum of 6 charts");
   }
 
   // Set widthPerChart and fontSize based on the number of charts
-  let widthPerChart, fontSize,
-  chartSpacing;
+  let widthPerChart, fontSize, chartSpacing;
   if (totalCharts === 1) {
     widthPerChart = 350;
     fontSize = 26;
@@ -20,7 +19,7 @@ async function generateChart(chartDataArray) {
   } else if (totalCharts <= 2) {
     widthPerChart = 240;
     fontSize = 20;
-    chartSpacing = spacing + 60;;
+    chartSpacing = spacing + 60;
   } else if (totalCharts <= 6) {
     widthPerChart = 200;
     fontSize = 18;
@@ -33,7 +32,15 @@ async function generateChart(chartDataArray) {
   const canvas = createCanvas(canvasWidth, canvasHeight);
   const ctx = canvas.getContext("2d");
 
-  await drawCanvas(ctx, chartDataArray, canvas, widthPerChart, fontSize, totalCharts,chartSpacing);
+  await drawCanvas(
+    ctx,
+    chartDataArray,
+    canvas,
+    widthPerChart,
+    fontSize,
+    totalCharts,
+    chartSpacing
+  );
 
   const imageDataURL = canvas.toDataURL("image/png");
   const dataURLParts = imageDataURL.split(",");
@@ -42,28 +49,39 @@ async function generateChart(chartDataArray) {
   return imageBuffer;
 }
 
-async function drawCanvas(ctx, chartDataArray, canvas, widthPerChart, fontSize, totalCharts,chartSpacing) {
+async function drawCanvas(
+  ctx,
+  chartDataArray,
+  canvas,
+  widthPerChart,
+  fontSize,
+  totalCharts,
+  chartSpacing
+) {
   const height = 250;
   const spacing = 70;
   const spacingY = 15;
 
   const chartImages = [];
-   // Set the background color to transparent
-   ctx.fillStyle = 'rgba(255, 0, 0, 0)';
-
-   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   for (const chartData of chartDataArray) {
-    const { title, value, type, range } = chartData;
-    let min_range = range[0];
-    let max_range = range[range.length - 1];
+    const { label, value, type, ranges,colorPalette,backgroundColor } = chartData;
+    console.log("DATA",label, value, type, ranges,colorPalette,backgroundColor)
+    let min_range = ranges[0];
+    let max_range = ranges[ranges.length - 1];
+      // Set the background color to transparent
+  ctx.fillStyle = backgroundColor;
 
-    const ranges = [min_range.min, max_range.max];
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+
+   // const ranges = [min_range.min, max_range.max];
+   const range = [min_range, max_range]
 
     const gradient = ctx.createLinearGradient(0, 0, widthPerChart, 0);
-    gradient.addColorStop(0, "green");
-    gradient.addColorStop(0.7, "yellow");
-    gradient.addColorStop(1, "red");
+    gradient.addColorStop(0, colorPalette[0]);
+    gradient.addColorStop(0.7, colorPalette[1]);
+    gradient.addColorStop(1, colorPalette[2]);
 
     const gaugeChartText = {
       id: "gaugeChartText",
@@ -102,7 +120,7 @@ async function drawCanvas(ctx, chartDataArray, canvas, widthPerChart, fontSize, 
         }
 
         textLabel(
-          `${ranges[0]}`,
+          `${range[0]}`,
           left,
           yCoor + 15,
           rangeFontSize,
@@ -111,7 +129,7 @@ async function drawCanvas(ctx, chartDataArray, canvas, widthPerChart, fontSize, 
           "left"
         );
         textLabel(
-          `${ranges[1]}`,
+          `${range[1]}`,
           right,
           yCoor + 15,
           rangeFontSize,
@@ -131,7 +149,7 @@ async function drawCanvas(ctx, chartDataArray, canvas, widthPerChart, fontSize, 
         textLabel(
           score,
           xCoor,
-          totalCharts > 1 ? yCoor -15: yCoor - 45,
+          totalCharts > 1 ? yCoor - 15 : yCoor - 45,
           scoreFontSize,
           "bottom",
           "bold",
@@ -156,8 +174,9 @@ async function drawCanvas(ctx, chartDataArray, canvas, widthPerChart, fontSize, 
       data: {
         datasets: [
           {
-            label: title,
-            data: [value, max_range.max - value],
+            label: label,
+            //data: [value, max_range.max - value],
+            data: [value, max_range - value],
             backgroundColor: [gradient, "grey"],
             borderWidth: 1,
             cutout: "72%",
@@ -182,7 +201,7 @@ async function drawCanvas(ctx, chartDataArray, canvas, widthPerChart, fontSize, 
         },
         title: {
           display: true,
-          text: title,
+          text: label,
           fontSize: 16,
         },
       },
@@ -198,15 +217,15 @@ async function drawCanvas(ctx, chartDataArray, canvas, widthPerChart, fontSize, 
 
   const maxRows = Math.ceil(chartDataArray.length / chartsPerRow);
 
+  const totalWidth =
+    chartsPerRow * widthPerChart +
+    (chartsPerRow - 1) * (totalCharts <= 2 ? chartSpacing : spacing);
 
-    const totalWidth =
-    chartsPerRow * widthPerChart + (chartsPerRow - 1) * (totalCharts <= 2 ? chartSpacing : spacing);
-    
-  const totalHeight =
-    maxRows * height + (maxRows - 1) * spacingY;
+  const totalHeight = maxRows * height + (maxRows - 1) * spacingY;
 
   // Calculate the starting point to center the charts with equal margins from top and bottom
-  const availableHeight = canvas.height - maxRows * height - (maxRows - 1) * spacingY;
+  const availableHeight =
+    canvas.height - maxRows * height - (maxRows - 1) * spacingY;
   const startY = (availableHeight - spacingY) / 2 + spacingY / 2;
   const startX = (canvas.width - totalWidth) / 2;
 
@@ -218,7 +237,7 @@ async function drawCanvas(ctx, chartDataArray, canvas, widthPerChart, fontSize, 
         const chartImage = chartImages[chartImageIndex];
         const chartImageObj = await loadImage(chartImage);
         const offsetY = startY + i * (height + spacingY);
-        
+
         const offsetX = startX + j * (widthPerChart + spacing);
         ctx.drawImage(chartImageObj, offsetX, offsetY);
       }
