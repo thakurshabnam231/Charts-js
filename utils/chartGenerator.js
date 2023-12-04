@@ -6,17 +6,25 @@ async function generateChart(chartDataArray) {
   const totalCharts = chartDataArray.length;
   const spacing = 20;
 
+  if (chartDataArray.length > 6) {
+    throw new Error('You can generate a maximum of 6 charts');
+  }
+
   // Set widthPerChart and fontSize based on the number of charts
-  let widthPerChart, fontSize;
+  let widthPerChart, fontSize,
+  chartSpacing;
   if (totalCharts === 1) {
     widthPerChart = 350;
-    fontSize = 24;
+    fontSize = 26;
+    chartSpacing = spacing;
   } else if (totalCharts <= 2) {
     widthPerChart = 240;
     fontSize = 20;
+    chartSpacing = spacing + 60;;
   } else if (totalCharts <= 6) {
     widthPerChart = 200;
     fontSize = 18;
+    chartSpacing = spacing;
   }
 
   const canvasWidth = 600;
@@ -25,7 +33,7 @@ async function generateChart(chartDataArray) {
   const canvas = createCanvas(canvasWidth, canvasHeight);
   const ctx = canvas.getContext("2d");
 
-  await drawCanvas(ctx, chartDataArray, canvas, widthPerChart, fontSize);
+  await drawCanvas(ctx, chartDataArray, canvas, widthPerChart, fontSize, totalCharts,chartSpacing);
 
   const imageDataURL = canvas.toDataURL("image/png");
   const dataURLParts = imageDataURL.split(",");
@@ -34,12 +42,16 @@ async function generateChart(chartDataArray) {
   return imageBuffer;
 }
 
-async function drawCanvas(ctx, chartDataArray, canvas, widthPerChart, fontSize) {
+async function drawCanvas(ctx, chartDataArray, canvas, widthPerChart, fontSize, totalCharts,chartSpacing) {
   const height = 250;
   const spacing = 70;
   const spacingY = 15;
 
   const chartImages = [];
+   // Set the background color to transparent
+   ctx.fillStyle = 'rgba(255, 0, 0, 0)';
+
+   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   for (const chartData of chartDataArray) {
     const { title, value, type, range } = chartData;
@@ -69,6 +81,11 @@ async function drawCanvas(ctx, chartDataArray, canvas, widthPerChart, fontSize) 
         const score = data.datasets[0].data[0];
         const label = data.datasets[0].label;
 
+        // Set different font sizes for different elements
+        const rangeFontSize = fontSize;
+        const labelFontSize = fontSize;
+        const scoreFontSize = fontSize + 8; // Adjust this value as needed
+
         function textLabel(
           text,
           x,
@@ -87,8 +104,8 @@ async function drawCanvas(ctx, chartDataArray, canvas, widthPerChart, fontSize) 
         textLabel(
           `${ranges[0]}`,
           left,
-          yCoor + 20,
-          15,
+          yCoor + 15,
+          rangeFontSize,
           "top",
           "normal",
           "left"
@@ -96,14 +113,30 @@ async function drawCanvas(ctx, chartDataArray, canvas, widthPerChart, fontSize) 
         textLabel(
           `${ranges[1]}`,
           right,
-          yCoor + 20,
-          15,
+          yCoor + 15,
+          rangeFontSize,
           "top",
           "normal",
           "right"
         );
-        textLabel(label, xCoor, yCoor + 40, 16, "bottom", "700", "center");
-        textLabel(score, xCoor, yCoor - 15, 25, "bottom", "bold", "center");
+        textLabel(
+          label,
+          xCoor,
+          totalCharts > 1 ? yCoor + 40 : yCoor + 24,
+          labelFontSize,
+          "bottom",
+          "700",
+          "center"
+        );
+        textLabel(
+          score,
+          xCoor,
+          totalCharts > 1 ? yCoor -15: yCoor - 45,
+          scoreFontSize,
+          "bottom",
+          "bold",
+          "center"
+        );
       },
     };
 
@@ -112,7 +145,7 @@ async function drawCanvas(ctx, chartDataArray, canvas, widthPerChart, fontSize) 
       height,
       chartCallback: (ChartJS) => {
         if (ChartJS.defaults?.global) {
-          ChartJS.defaults.global.defaultFontColor = "black";
+          ChartJS.defaults.global.defaultFontColor = "transparent";
           ChartJS.defaults.global.defaultFontSize = fontSize;
         }
       },
@@ -165,6 +198,18 @@ async function drawCanvas(ctx, chartDataArray, canvas, widthPerChart, fontSize) 
 
   const maxRows = Math.ceil(chartDataArray.length / chartsPerRow);
 
+
+    const totalWidth =
+    chartsPerRow * widthPerChart + (chartsPerRow - 1) * (totalCharts <= 2 ? chartSpacing : spacing);
+    
+  const totalHeight =
+    maxRows * height + (maxRows - 1) * spacingY;
+
+  // Calculate the starting point to center the charts with equal margins from top and bottom
+  const availableHeight = canvas.height - maxRows * height - (maxRows - 1) * spacingY;
+  const startY = (availableHeight - spacingY) / 2 + spacingY / 2;
+  const startX = (canvas.width - totalWidth) / 2;
+
   for (let i = 0; i < maxRows; i++) {
     for (let j = 0; j < chartsPerRow; j++) {
       const chartImageIndex = i * chartsPerRow + j;
@@ -172,8 +217,9 @@ async function drawCanvas(ctx, chartDataArray, canvas, widthPerChart, fontSize) 
       if (chartImageIndex < chartDataArray.length) {
         const chartImage = chartImages[chartImageIndex];
         const chartImageObj = await loadImage(chartImage);
-        const offsetY = i * (height + spacingY);
-        const offsetX = j * (widthPerChart + spacing);
+        const offsetY = startY + i * (height + spacingY);
+        
+        const offsetX = startX + j * (widthPerChart + spacing);
         ctx.drawImage(chartImageObj, offsetX, offsetY);
       }
     }
